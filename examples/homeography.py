@@ -1,5 +1,9 @@
 # this is the code for performing the homeography. 
-# it uses a fixed code. 
+# it uses a inline variables for the file names.
+# 
+# it can be used as a test bed for different proor of concepts
+#
+# most of the code has been transfered to image_homeography_class.py 
 
 #%%
 import cv2
@@ -28,7 +32,7 @@ roi = img1[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
 cv2.destroyWindow('Select ROI')
 
 # Initiate SIFT detector
-sift = cv2.xfeatures2d.SIFT_create()
+sift = cv2.SIFT_create()
 # find the keypoints and descriptors with SIFT
 kp1, des1 = sift.detectAndCompute(roi, None)
 kp2, des2 = sift.detectAndCompute(img2,None)
@@ -62,7 +66,10 @@ else:
     matchesMask = None
 # %%
 # Points in destination image that you want to map to
-dest_pts = np.float32([[r[0], r[1]], [r[0], r[1]+r[3]], [r[0]+r[2], r[1]+r[3]], [r[0]+r[2], r[1]]]).reshape(-1,1,2)
+dest_pts = np.float32([[r[0], r[1]], 
+                       [r[0], r[1]+r[3]], 
+                       [r[0]+r[2], r[1]+r[3]], 
+                       [r[0]+r[2], r[1]]]).reshape(-1,1,2)
 
 # Calculate the inverse homography matrix
 M_inverseraw, _ = cv2.findHomography(np.array(dst), dest_pts, cv2.RANSAC,5.0)
