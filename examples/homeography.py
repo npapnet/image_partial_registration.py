@@ -3,11 +3,16 @@
 
 #%%
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import PIL
+import tkinter as tk
+from PIL import ImageTk
+
 # Container class to hold the original images
 
-
+# minimum good matches
+MIN_GOOD_MATCHES = 10 
 
 # %%
 img1 = cv2.imread('data/im0-1kg1.jpg',0)
@@ -39,7 +44,7 @@ for m, n in matches:
         good.append(m)
 
 # Homography
-if len(good) > 10:
+if len(good) > MIN_GOOD_MATCHES:
     src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
     dst_pts = np.float32([ kp2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
 
@@ -60,8 +65,13 @@ else:
 dest_pts = np.float32([[r[0], r[1]], [r[0], r[1]+r[3]], [r[0]+r[2], r[1]+r[3]], [r[0]+r[2], r[1]]]).reshape(-1,1,2)
 
 # Calculate the inverse homography matrix
-M_inverse, _ = cv2.findHomography(np.array(dst), dest_pts, cv2.RANSAC,5.0)
-
+M_inverseraw, _ = cv2.findHomography(np.array(dst), dest_pts, cv2.RANSAC,5.0)
+M_inverse = M_inverseraw
+# # mimimize shear 
+# M_inverse = np.eye(3)
+# M_inverse[0,2] = M_inverseraw[0,2]
+# M_inverse[1,2] = M_inverseraw[1,2]
+print(M_inverse)
 # Create a new image which is a copy of img2
 new_img2 = img2.copy()
 
@@ -99,7 +109,59 @@ superimposed_img = cv2.addWeighted(cropped_img1_color, 0.5, cropped_translated_i
 
 # Display the superimposed image
 plt.imshow(cv2.cvtColor(superimposed_img, cv2.COLOR_BGR2RGB))  # Convert from BGR to RGB for displaying
-plt.show()
+# plt.show()
 
+#%% [markdown]
+# # Difference
+#  the following code applied differences
+#%%
+# # %% 
+def simple_diff (img1, img2):
+    # Compute the absolute difference between the images
+    diff = cv2.absdiff(img1, img2)
+
+    # Apply a binary threshold to the difference (this will make the "hotspots" appear white)
+    _, threshold = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+    return threshold
+
+# threshold = simple_diff (img1=cropped_img1_color,img2=cropped_translated_img2_color)
+
+def edge_detection_diff (img1,img2, threshold1=30, threshold2=100):
+    edges1 = cv2.Canny(img1, threshold1=threshold1, threshold2=threshold2)
+    edges2 = cv2.Canny(img2, threshold1=threshold1, threshold2=threshold2)
+
+    # Compute the absolute difference between the edge images
+    diff = cv2.absdiff(edges1, edges2)
+    _, threshold = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+    return threshold
+
+threshold = edge_detection_diff (img1=cropped_img1_color,img2=cropped_translated_img2_color)
+
+
+
+
+class ImageWindow(tk.Toplevel):
+    def __init__(self, image, title='Image', *args, **kwargs):
+        super(ImageWindow, self).__init__(*args, **kwargs)
+        
+        self.title(title)
+
+        # Convert the grayscale OpenCV image to PIL format, then to ImageTk format
+        img_pil = PIL.Image.fromarray(image)
+        self.img_tk = ImageTk.PhotoImage(image=img_pil)
+
+        # Create a label to hold the image
+        self.label = tk.Label(self, image=self.img_tk)
+        self.label.pack()
+
+# Display the hotspot image
+# Create a new tkinter window and start the GUI
+root = tk.Tk()
+root.withdraw()  # hide main root window
+app = ImageWindow(threshold, 'Hotspots')
+# root.mainloop()
+ # %%
+app.mainloop()
+# # %%
 
 # %%

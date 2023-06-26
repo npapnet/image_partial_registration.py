@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class ImageProcessing:
+    MIN_GOOD_MATCHES = 10 
     def __init__(self, img1, img2):
         self.img1 = img1
         self.img2 = img2
@@ -28,7 +29,7 @@ class ImageProcessing:
             if m.distance < 0.75 * n.distance:
                 good.append(m)
 
-        if len(good) > 10:
+        if len(good) > self.MIN_GOOD_MATCHES:
             src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
             dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
